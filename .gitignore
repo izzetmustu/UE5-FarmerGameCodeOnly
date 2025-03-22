@@ -1,0 +1,24 @@
+# Exclude everything in Content except ThirdPerson
+/Content/*
+!/Content/ThirdPerson/
+
+# Exclude common Unreal Engine build and cache folders
+/Binaries/
+/Build/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
+
+# Exclude Visual Studio / IDE files
+.vscode/
+*.sln
+*.opensdf
+*.sdf
+*.suo
+*.user
+*.userprefs
+*.log
+*.vs/
+
+.idea
+.vsconfig
