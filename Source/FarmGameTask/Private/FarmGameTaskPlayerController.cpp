@@ -1,22 +1,30 @@
 #include "FarmGameTask/Public/FarmGameTaskPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "FarmGameTask/Public/FarmBudgetWidget.h"
-#include "FarmGameTask/Public/FarmGameTaskGameState.h"
+#include "FarmGameTask/Public/FarmGameTaskPlayerState.h"
+#include "FarmGameTask/Public/SalesCounter.h"
+#include "FarmGameTask/Public/SalesCounterWidget.h"
+#include "FarmGameTask/Public/CropTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "FarmGameTaskGameState.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
 
 AFarmGameTaskPlayerController::AFarmGameTaskPlayerController()
 {
-    // Optionally set default values or widget references here
-    // set default pawn class to our Blueprinted character
     static ConstructorHelpers::FClassFinder<UUserWidget> FarmBudgetWidgetBPClass(TEXT("/Game/ThirdPerson/Blueprints/WBP_FarmBudgetWidget"));
     if (FarmBudgetWidgetBPClass.Class != NULL)
     {
         FarmBudgetWidgetClass = FarmBudgetWidgetBPClass.Class;
         FarmBudgetWidgetInstance = nullptr;
+    }
+    static ConstructorHelpers::FClassFinder<UUserWidget> USalesCounterWidget(TEXT("/Game/ThirdPerson/Blueprints/WBP_SalesCounterWidget"));
+    if (USalesCounterWidget.Class != NULL)
+    {
+        SalesCounterWidgetClass = USalesCounterWidget.Class;
+        SalesCounterWidgetInstance = nullptr;
     }
 
     static ConstructorHelpers::FObjectFinder<UInputAction> InputActionFinder(TEXT("/Game/ThirdPerson/Input/Actions/IA_Interact"));
@@ -31,6 +39,10 @@ AFarmGameTaskPlayerController::AFarmGameTaskPlayerController()
     {
         IMC_MyMappings = MappingContextFinder.Object;
     }
+}
+
+void AFarmGameTaskPlayerController::BuySeeds(int32 SeedCost)
+{
 }
 
 void AFarmGameTaskPlayerController::BeginPlay()
@@ -79,9 +91,6 @@ void AFarmGameTaskPlayerController::SetupInputComponent()
 
 void AFarmGameTaskPlayerController::Interact()
 {
-    // This is the client function called when pressing 'E'
-    // Typically you'd do a client-side line trace to find an interactable object, 
-    // then pass it to the server to do the real interaction.
     if (HasAuthority())
     {
         UE_LOG(LogTemp, Log, TEXT("SERVER CALLS ServerInteract_Implementation FROM INTERACT"));
@@ -92,76 +101,124 @@ void AFarmGameTaskPlayerController::Interact()
         UE_LOG(LogTemp, Log, TEXT("CLIENT CALLS ServerInteract FROM INTERACT"));
         ServerInteract();
     }
-    
-    // // Example of a direct server call:
-    // if (!HasAuthority() && IsLocalController())
-    // {
-    //     ServerInteract();
-    //     UWorld* World = GetWorld();
-    //     if (World)
-    //     {
-    //         GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("interact ")));
-    //     }
-    // }
-    // else
-    // {
-    //     // If for some reason this is already the server, do the logic directly
-    //     // But normally, the PlayerController on a Listen Server is authoritative too
-    //     UE_LOG(LogTemp, Log, TEXT("Interact called on server already."));
-    //     UWorld* World = GetWorld();
-    //     if (World)
-    //     {
-    //         GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("interact has authority ")));
-    //     }
-    // }
 }
 
 void AFarmGameTaskPlayerController::ServerInteract_Implementation()
 {
-    // Perform the actual interaction on the server (authoritative).
-    // e.g. line trace from the player's Pawn, check if it hits an IInteractable,
-    // then call Interact(...) on that object, subtract budget, etc.
     UE_LOG(LogTemp, Log, TEXT("ServerInteract_Implementation: Doing server-side interaction logic"));
-    BuySeeds(10);
+    // BuySeeds(10);
 }
 
 bool AFarmGameTaskPlayerController::ServerInteract_Validate()
 {
-    // Optionally do checks to prevent cheating (distance checks, etc.)
     return true;
 }
 
-//--------------------------------------------------
-// Buying Seeds Example
-//--------------------------------------------------
-void AFarmGameTaskPlayerController::BuySeeds(int32 SeedCost)
+void AFarmGameTaskPlayerController::ServerAttemptBuyCrop_Implementation(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
 {
-    // This is a BlueprintCallable method that you might call from a UI button or other code
-    if (!HasAuthority())
+    TargetCounter->ServerBuyCrop(CropType, Amount);
+    AFarmGameTaskPlayerState* PS = GetPlayerState<AFarmGameTaskPlayerState>();
+    if (PS)
     {
-        // If not authoritative, call the server
-        ServerBuySeeds(SeedCost);
-    }
-    else
-    {
-        // If this is a Listen Server's local PC, we can just do the logic
-        ServerBuySeeds_Implementation(SeedCost);
+        PS->ServerAddToInventory(CropType, Amount);
     }
 }
-
-void AFarmGameTaskPlayerController::ServerBuySeeds_Implementation(int32 Cost)
+bool AFarmGameTaskPlayerController::ServerAttemptBuyCrop_Validate(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
 {
-    // On the server: get the FarmGameState, reduce the budget
-    AFarmGameTaskGameState* FarmGS = GetWorld()->GetGameState<AFarmGameTaskGameState>();
-    if (FarmGS)
-    {
-        UE_LOG(LogTemp, Log, TEXT("ServerBuySeeds_Implementation: Buying seeds with cost=%d"), Cost);
-        FarmGS->ServerChangeBudget(-Cost);  // Or clamp so it doesn't go negative
-    }
+    return (TargetCounter && Amount > 0 && Amount < 999999);
 }
 
-bool AFarmGameTaskPlayerController::ServerBuySeeds_Validate(int32 Cost)
+void AFarmGameTaskPlayerController::ServerAttemptPlaceCrop_Implementation(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
 {
-    // Optionally check if Cost is valid, or if the player can afford it
+    if (TargetCounter)
+    {
+        TargetCounter->ServerPlaceCrop(CropType, Amount);
+    }
+}
+bool AFarmGameTaskPlayerController::ServerAttemptPlaceCrop_Validate(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
+{
     return true;
+}
+
+void AFarmGameTaskPlayerController::UpdateSalesWidget()
+{
+    SalesCounterWidgetInstance->UpdateCounterDisplay();
+}
+
+void AFarmGameTaskPlayerController::ShowSalesCounter(ASalesCounter* InSalesCounter)
+{
+    // If we already have the sales widget visible, do nothing
+    if (bIsSalesWidgetVisible)
+        return;
+
+    bIsSalesWidgetVisible = true;
+
+    // Remove the farm budget widget from viewport (if it's displayed)
+    if (FarmBudgetWidgetInstance)
+    {
+        FarmBudgetWidgetInstance->RemoveFromParent();
+    }
+
+    // Create the sales counter widget
+    if (SalesCounterWidgetClass)
+    {
+        SalesCounterWidgetInstance = CreateWidget<USalesCounterWidget>(this, SalesCounterWidgetClass);
+        if (SalesCounterWidgetInstance)
+        {
+            // Link the sales counter to the widget
+            SalesCounterWidgetInstance->SetSalesCounter(InSalesCounter);
+            SalesCounterWidgetInstance->AddToViewport();
+        }
+    }
+
+    // (2) Show mouse cursor
+    bShowMouseCursor = true;
+
+    // // (3) Set an input mode focusing on UI
+    // FInputModeUIOnly InputMode;
+    // if (SalesCounterWidgetInstance)
+    // {
+    //     // Set the widget to focus so that keyboard/gamepad input goes to the UI
+    //     InputMode.SetWidgetToFocus(SalesCounterWidgetInstance->TakeWidget());
+    // }
+    // SetInputMode(InputMode);
+
+    // (4) Disable camera rotation/look
+    SetIgnoreLookInput(true);  // Now moving mouse won't rotate camera
+    // SetIgnoreMoveInput(false);  // Optionally keep movement if you want
+
+    // If you want to disable *all* movement:
+    // SetIgnoreMoveInput(true);
+}
+
+void AFarmGameTaskPlayerController::HideSalesCounter()
+{
+    // If the sales widget isn't visible, do nothing
+    if (!bIsSalesWidgetVisible)
+        return;
+
+    bIsSalesWidgetVisible = false;
+
+    // Remove the SalesCounterWidget from the viewport
+    if (SalesCounterWidgetInstance)
+    {
+        SalesCounterWidgetInstance->RemoveFromParent();
+        SalesCounterWidgetInstance = nullptr;  // Destroy or re-create next time
+    }
+    // (2) Hide the mouse cursor
+    bShowMouseCursor = false;
+
+    // // (3) Set input mode back to gameplay
+    // FInputModeGameOnly GameInput;
+    // SetInputMode(GameInput);
+
+    // (4) Re-enable look input
+    SetIgnoreLookInput(false);
+    // SetIgnoreMoveInput(false); 
+
+    // Re-add the FarmBudgetWidget
+    if (FarmBudgetWidgetInstance && !FarmBudgetWidgetInstance->IsInViewport())
+    {
+        FarmBudgetWidgetInstance->AddToViewport();
+    }
 }

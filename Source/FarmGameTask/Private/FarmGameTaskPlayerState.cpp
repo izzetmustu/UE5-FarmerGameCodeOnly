@@ -1,15 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "FarmGameTask/Public/FarmGameTaskPlayerState.h"
+#include "FarmGameTask/Public/FarmGameTaskPlayerController.h"
 #include "Net/UnrealNetwork.h"
 
 AFarmGameTaskPlayerState::AFarmGameTaskPlayerState()
 {
-    // Set default values
-    CropsHarvested = 0;
+    CornCount = 0;
+    WheatCount = 0;
+    ProcessedCornCount = 0;
+    ProcessedWheatCount = 0;
     MoneySpent = 0;
-    FarmScore = 0;
+    CropsHarvested = 0;
+    CropsProcessed = 0;
+    
 }
 
 //------------------------------------------------
@@ -40,14 +42,54 @@ bool AFarmGameTaskPlayerState::ServerIncrementMoneySpent_Validate(int32 Amount)
     return (Amount >= 0);
 }
 
-void AFarmGameTaskPlayerState::ServerIncrementFarmScore_Implementation(int32 Amount)
+void AFarmGameTaskPlayerState::ServerIncrementCropsProcessed_Implementation(int32 Amount)
 {
-    FarmScore += Amount;
+    CropsProcessed += Amount;
 }
 
-bool AFarmGameTaskPlayerState::ServerIncrementFarmScore_Validate(int32 Amount)
+bool AFarmGameTaskPlayerState::ServerIncrementCropsProcessed_Validate(int32 Amount)
 {
     return (Amount != 0);
+}
+
+void AFarmGameTaskPlayerState::ServerAddToInventory_Implementation(ECropType ItemType, int32 Amount)
+{
+    switch (ItemType)
+    {
+    case ECropType::Corn:
+        CornCount += Amount;
+        break;
+
+    case ECropType::Wheat:
+        WheatCount += Amount;
+        break;
+
+        // If you have more items, add cases here...
+    default:
+        break;
+    }
+
+    if (AController* OwningController = Cast<AController>(GetOwner()))
+    {
+        // For a player-controlled pawn:
+        if (AFarmGameTaskPlayerController* PC = Cast<AFarmGameTaskPlayerController>(OwningController))
+        {
+            if (PC)
+            {
+                if (PC->bIsSalesWidgetVisible)
+                {
+                    PC->UpdateSalesWidget();          
+                }
+            }
+        }
+    }
+
+
+}
+
+bool AFarmGameTaskPlayerState::ServerAddToInventory_Validate(ECropType ItemType, int32 Amount)
+{
+    return (Amount > 0);
 }
 
 //------------------------------------------------
@@ -65,20 +107,38 @@ void AFarmGameTaskPlayerState::OnRep_MoneySpent()
     UE_LOG(LogTemp, Log, TEXT("OnRep_MoneySpent: Now = %d for player %s"), MoneySpent, *GetPlayerName());
 }
 
-void AFarmGameTaskPlayerState::OnRep_FarmScore()
+void AFarmGameTaskPlayerState::OnRep_CropsProcessed()
 {
-    UE_LOG(LogTemp, Log, TEXT("OnRep_FarmScore: Now = %d for player %s"), FarmScore, *GetPlayerName());
+    UE_LOG(LogTemp, Log, TEXT("OnRep_CropsProcessed: Now = %d for player %s"), CropsProcessed, *GetPlayerName());
 }
 
-//------------------------------------------------
-// Replication
-//------------------------------------------------
+void AFarmGameTaskPlayerState::OnRep_Inventory()
+{
+    if (AController* OwningController = Cast<AController>(GetOwner()))
+    {
+        // For a player-controlled pawn:
+        if (AFarmGameTaskPlayerController* PC = Cast<AFarmGameTaskPlayerController>(OwningController))
+        {
+            if (PC)
+            {
+                if (PC->bIsSalesWidgetVisible)
+                {
+                    PC->UpdateSalesWidget();          
+                }
+            }
+        }
+    }
+}
 
 void AFarmGameTaskPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+    DOREPLIFETIME(AFarmGameTaskPlayerState, CornCount);
+    DOREPLIFETIME(AFarmGameTaskPlayerState, WheatCount);
+    DOREPLIFETIME(AFarmGameTaskPlayerState, ProcessedCornCount);
+    DOREPLIFETIME(AFarmGameTaskPlayerState, ProcessedWheatCount);
     DOREPLIFETIME(AFarmGameTaskPlayerState, CropsHarvested);
     DOREPLIFETIME(AFarmGameTaskPlayerState, MoneySpent);
-    DOREPLIFETIME(AFarmGameTaskPlayerState, FarmScore);
+    DOREPLIFETIME(AFarmGameTaskPlayerState, CropsProcessed);
 }

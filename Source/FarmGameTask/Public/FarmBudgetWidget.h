@@ -40,5 +40,5 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* MoneySpent;
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* FarmScore;
+	UTextBlock* CropsProcessed;
 };

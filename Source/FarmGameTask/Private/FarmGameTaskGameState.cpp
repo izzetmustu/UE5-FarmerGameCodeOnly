@@ -21,8 +21,7 @@ AFarmGameTaskGameState::AFarmGameTaskGameState()
 void AFarmGameTaskGameState::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Server-only for GameState in a networked game
+	
 	UWorld* World = GetWorld();
 	if (HasAuthority())
 	{
@@ -47,9 +46,7 @@ void AFarmGameTaskGameState::ServerChangeBudget_Implementation(int32 Delta)
 
 bool AFarmGameTaskGameState::ServerChangeBudget_Validate(int32 Delta)
 {
-	// Validation step can be used to reject impossible changes, 
-	// e.g. if Delta is too large or budget can’t drop below zero. 
-	if (Delta > 1000) return false;
+	if (Delta > 1000 || Delta < -1000) return false;
 	return true;
 }
 

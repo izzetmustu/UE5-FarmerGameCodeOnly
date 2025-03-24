@@ -10,11 +10,7 @@
 void UFarmBudgetWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-	{
-	this->UpdateFarmBudgetDisplay();
-	});
-	// UpdateFarmBudgetDisplay();
+	UpdateFarmBudgetDisplay();
 }
 
 void UFarmBudgetWidget::UpdateFarmBudgetDisplay()
@@ -34,7 +30,7 @@ void UFarmBudgetWidget::UpdateFarmBudgetDisplay()
 
 	// Get the current budget
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC && CropsHarvested && MoneySpent && FarmScore)
+	if (PC && CropsHarvested && MoneySpent && CropsProcessed)
 	{
 		AFarmGameTaskPlayerState* PS = PC->GetPlayerState<AFarmGameTaskPlayerState>();
 		if (PS)
@@ -48,9 +44,9 @@ void UFarmBudgetWidget::UpdateFarmBudgetDisplay()
 			TempText = FText::AsNumber(Temp);
 			MoneySpent->SetText(TempText);
 
-			Temp = PS->GetFarmScore();
+			Temp = PS->GetCropsProcessed();
 			TempText = FText::AsNumber(Temp);
-			FarmScore->SetText(TempText);
+			CropsProcessed->SetText(TempText);
 		}
 	}
 }
