@@ -15,10 +15,7 @@ class FARMGAMETASK_API AFarmGameTaskGameState : public AGameStateBase
 	GENERATED_BODY()
 public:
 	AFarmGameTaskGameState();
-	/** 
-	 * The shared budget for the farm (replicated).
-	 * Adjust via ServerChangeBudget() on the server to keep all clients in sync.
-	 */
+
 	UPROPERTY(ReplicatedUsing=OnRep_FarmBudget, BlueprintReadOnly, Category="Farm")
 	int32 FarmBudget;
 

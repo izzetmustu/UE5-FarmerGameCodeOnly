@@ -12,7 +12,6 @@ AFarmGameTaskGameMode::AFarmGameTaskGameMode()
 	GameStateClass = AFarmGameTaskGameState::StaticClass();
 	PlayerControllerClass = AFarmGameTaskPlayerController::StaticClass();
 	PlayerStateClass = AFarmGameTaskPlayerState::StaticClass();
-	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter"));
 	if (PlayerPawnBPClass.Class != NULL)
 	{

@@ -20,7 +20,6 @@ public:
     void ServerIncrementCropsProcessed(int32 Amount);
     UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable, Category="Farm|Stats")
     void ServerAddToInventory(ECropType ItemType, int32 Amount);
-    // void ServerRemoveFromInventory(ECropType ItemType, int32 Amount);
 
 protected:
     UPROPERTY(ReplicatedUsing=OnRep_Inventory, BlueprintReadOnly, Category="Inventory")
@@ -55,6 +54,8 @@ protected:
 public:
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+    UFUNCTION(BlueprintCallable, Category="Sales")
+    int32 GetCropCount(ECropType CropType) const;
     UFUNCTION(BlueprintCallable, Category="Farm|Stats")
     FORCEINLINE int32 GetCropsHarvested() const { return CropsHarvested;};
     UFUNCTION(BlueprintCallable, Category="Farm|Stats")
@@ -70,3 +71,5 @@ public:
     UFUNCTION(BlueprintCallable, Category="Farm|Stats")
     FORCEINLINE int32 GetProcessedWheatCount() const { return ProcessedWheatCount;};
 };
+
+

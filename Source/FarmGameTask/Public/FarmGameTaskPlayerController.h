@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "SlotTypes.h"
 #include "FarmGameTaskPlayerController.generated.h"
 
 class UFarmBudgetWidget;
 class USalesCounterWidget;
+class UInteractSeedWidget;
 class AFarmGameTaskGameState;
 class UInputAction;
 class UInputMappingContext;
 class ASalesCounter;
+class ACropSlot;
 
-/**
- * 
- */
 UCLASS()
 class FARMGAMETASK_API AFarmGameTaskPlayerController : public APlayerController
 {
@@ -37,6 +37,11 @@ public:
 	UPROPERTY()
 	USalesCounterWidget* SalesCounterWidgetInstance;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="UI")
+	TSubclassOf<UInteractSeedWidget> InteractSeedWidgetClass;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="UI")
+	UInteractSeedWidget* InteractSeedWidgetInstance;
+	
 	UPROPERTY(BlueprintReadOnly, Category="UI")
 	bool bIsSalesWidgetVisible;
 	UFUNCTION(BlueprintCallable, Category="UI")
@@ -54,16 +59,17 @@ public:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAttemptBuyCrop(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount);
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAttemptPlaceCrop(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount);
-
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerInteractWithSlot(ACropSlot* TargetSlot, FSlotInfo Info);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAttemptSowSlot(ACropSlot* TargetSlot, FSlotInfo Info);
+	
 protected:
 	virtual void BeginPlay() override;
-	
+	UFUNCTION()
 	void Interact();
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerInteract();
 	
 	virtual void SetupInputComponent() override;
 };

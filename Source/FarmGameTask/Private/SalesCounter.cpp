@@ -12,34 +12,48 @@
 // Sets default values
 ASalesCounter::ASalesCounter()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	bReplicates = true; // Ensure replication
+	bReplicates = true;
 
-    // Create the Mesh Component
     MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
     RootComponent = MeshComp;
+    ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    if (MeshComp && CubeMesh.Succeeded())
+    {
+        MeshComp->SetStaticMesh(CubeMesh.Object);
+        MeshComp->SetRelativeScale3D(FVector(1.0f, 6.0f, 1.0f));
+    }
     
     OverlapBox = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapBox"));
     OverlapBox->SetupAttachment(RootComponent);
     OverlapBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     OverlapBox->SetCollisionResponseToAllChannels(ECR_Overlap);
+    OverlapBox->SetWorldScale3D(FVector(3.25f,1.75f,2.0f));
+    OverlapBox->SetRelativeLocation(FVector(94.f, 1.8f, 10.f));
+
+    // Create a default material for the sales counter
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(TEXT("/Game/ThirdPerson/Materials/M_SalesCounter"));
+    if (MaterialFinder.Succeeded())
+    {
+        CounterMaterial = MaterialFinder.Object;
+        MeshComp->SetMaterial(0, CounterMaterial);
+    }
     
-	// Default counts
 	WheatCount = 100;
 	CornCount  = 100;
+    CropPrices.Add(ECropType::Wheat ,10);
+    CropPrices.Add(ECropType::Corn ,15);
+    CropPrices.Add(ECropType::ProcessedWheat ,30);
+    CropPrices.Add(ECropType::ProcessedCorn ,45);
 
+    SetNetUpdateFrequency(66.f);
+    SetMinNetUpdateFrequency(33.f);
 }
 
 // Called when the game starts or when spawned
 void ASalesCounter::BeginPlay()
 {
 	Super::BeginPlay();
-    if (CounterMaterial)
-    {
-        MeshComp->SetMaterial(0, CounterMaterial);
-    }
-
     OverlapBox->OnComponentBeginOverlap.AddDynamic(this, &ASalesCounter::OnOverlapBoxBegin);
     OverlapBox->OnComponentEndOverlap.AddDynamic(this, &ASalesCounter::OnOverlapBoxEnd);
 }
@@ -63,7 +77,6 @@ void ASalesCounter::OnOverlapBoxBegin(
             APlayerController* PC = Cast<APlayerController>(OverlappingPawn->GetController());
             if (PC)
             {
-                // Our custom farm PC
                 if (AFarmGameTaskPlayerController* FarmPC = Cast<AFarmGameTaskPlayerController>(PC))
                 {
                     FarmPC->ShowSalesCounter(this);
@@ -108,119 +121,46 @@ AFarmGameTaskGameState* ASalesCounter::GetFarmGameState() const
     return GetWorld() ? GetWorld()->GetGameState<AFarmGameTaskGameState>() : nullptr;
 }
 
-void ASalesCounter::ServerBuyCrop_Implementation(ECropType CropType, int32 Amount)
+void ASalesCounter::ServerChangeStock_Implementation(ECropType CropType, int32 Amount)
 {
-    if (WheatCount < 1 || CornCount < 1)
-    {
-        return;
-    }
-    
-    int32 AvailableCount = 0;
-    int32 PricePerUnit   = 0;
     switch (CropType)
     {
     case ECropType::Wheat:
-        AvailableCount = WheatCount;
-        PricePerUnit   = 10; // e.g., 10 currency per Wheat
+        WheatCount += Amount;
         break;
-
     case ECropType::Corn:
-        AvailableCount = CornCount;
-        PricePerUnit   = 15; // e.g., 15 currency per Corn
+        CornCount += Amount;
         break;
-
+    case ECropType::ProcessedWheat:
+        ProcessedWheatCount += Amount;
+        break;
+    case ECropType::ProcessedCorn:
+        ProcessedCornCount += Amount;
     default:
         break;
     }
-    
-    int32 QuantityToBuy = FMath::Min(Amount, AvailableCount);
-    if (CropType == ECropType::Wheat)
-    {
-        WheatCount -= QuantityToBuy;
-    }
-    else
-    {
-        CornCount -= QuantityToBuy;
-    }
-
-    int32 TotalSaleValue = QuantityToBuy * PricePerUnit;
-    if (TotalSaleValue < GetFarmGameState()->GetFarmBudget())
-    {
-        if (AFarmGameTaskGameState* FarmGS = GetFarmGameState()){
-            FarmGS->ServerChangeBudget(-TotalSaleValue);
-        }
-        UpdateDisplayWidget();
-    }
 }
 
-bool ASalesCounter::ServerBuyCrop_Validate(ECropType CropType, int32 Amount)
+bool ASalesCounter::ServerChangeStock_Validate(ECropType CropType, int32 Amount)
 {
-    return (Amount > 0 && Amount < 999999);
+    return true;
 }
 
-void ASalesCounter::ServerPlaceCrop_Implementation(ECropType CropType, int32 Amount)
+int32 ASalesCounter::GetCropCount(ECropType CropType) const
 {
-    if (Amount <= 0)
-    {
-        return;
-    }
-
     switch (CropType)
     {
-        case ECropType::Wheat:
-            ProcessedWheatCount += Amount;
-            UE_LOG(LogTemp, Log, TEXT("Placed %d Wheat on the counter. Total: %d"), Amount, WheatCount);
-            break;
-
-        case ECropType::Corn:
-            ProcessedCornCount += Amount;
-            UE_LOG(LogTemp, Log, TEXT("Placed %d Corn on the counter. Total: %d"), Amount, CornCount);
-            break;
-
-        default:
-            break;
+    case ECropType::Corn:
+        return CornCount;
+    case ECropType::Wheat:
+        return WheatCount;
+    case ECropType::ProcessedCorn:
+        return  ProcessedCornCount;
+    case ECropType::ProcessedWheat:
+        return ProcessedWheatCount;
+    default:
+        return CornCount;
     }
-    UpdateDisplayWidget();
-}
-
-bool ASalesCounter::ServerPlaceCrop_Validate(ECropType CropType, int32 Amount)
-{
-    // Optional cheat-prevention (e.g., disallow huge amounts)
-    return (Amount > 0 && Amount < 999999);
-}
-
-void ASalesCounter::UpdateDisplayWidget()
-{
-    AFarmGameTaskPlayerController* PC = Cast<AFarmGameTaskPlayerController>(GetWorld()->GetFirstPlayerController());
-    if (PC)
-    {
-        if (PC->bIsSalesWidgetVisible)
-        {
-            PC->UpdateSalesWidget();          
-        }
-    }
-}
-
-void ASalesCounter::OnRep_WheatCount()
-{
-    UpdateDisplayWidget();
-    UE_LOG(LogTemp, Log, TEXT("OnRep_WheatCount: New value = %d"), WheatCount);
-}
-
-void ASalesCounter::OnRep_CornCount()
-{
-    UpdateDisplayWidget();
-    UE_LOG(LogTemp, Log, TEXT("OnRep_CornCount: New value = %d"), CornCount);
-}
-
-void ASalesCounter::OnRep_ProcessedWheat()
-{
-    UpdateDisplayWidget();
-}
-
-void ASalesCounter::OnRep_ProcessedCorn()
-{
-    UpdateDisplayWidget();
 }
 
 void ASalesCounter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

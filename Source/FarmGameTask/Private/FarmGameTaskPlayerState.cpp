@@ -63,28 +63,30 @@ void AFarmGameTaskPlayerState::ServerAddToInventory_Implementation(ECropType Ite
     case ECropType::Wheat:
         WheatCount += Amount;
         break;
-
-        // If you have more items, add cases here...
+    case ECropType::ProcessedCorn:
+        ProcessedCornCount += Amount;
+        break;
+    case ECropType::ProcessedWheat:
+        ProcessedWheatCount += Amount;
+        break;
     default:
         break;
     }
 
     if (AController* OwningController = Cast<AController>(GetOwner()))
     {
-        // For a player-controlled pawn:
         if (AFarmGameTaskPlayerController* PC = Cast<AFarmGameTaskPlayerController>(OwningController))
         {
             if (PC)
             {
-                if (PC->bIsSalesWidgetVisible)
+                if (PC->SalesCounterWidgetInstance)
                 {
                     PC->UpdateSalesWidget();          
                 }
             }
         }
     }
-
-
+    
 }
 
 bool AFarmGameTaskPlayerState::ServerAddToInventory_Validate(ECropType ItemType, int32 Amount)
@@ -121,12 +123,29 @@ void AFarmGameTaskPlayerState::OnRep_Inventory()
         {
             if (PC)
             {
-                if (PC->bIsSalesWidgetVisible)
+                if (PC->SalesCounterWidgetInstance)
                 {
                     PC->UpdateSalesWidget();          
                 }
             }
         }
+    }
+}
+
+int32 AFarmGameTaskPlayerState::GetCropCount(ECropType CropType) const
+{
+    switch (CropType)
+    {
+    case ECropType::Corn:
+        return CornCount;
+    case ECropType::Wheat:
+        return WheatCount;
+    case ECropType::ProcessedCorn:
+        return  ProcessedCornCount;
+    case ECropType::ProcessedWheat:
+        return ProcessedWheatCount;
+    default:
+        return CornCount;
     }
 }
 
