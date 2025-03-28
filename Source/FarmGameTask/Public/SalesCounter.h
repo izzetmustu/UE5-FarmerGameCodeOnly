@@ -24,7 +24,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	TMap<ECropType, int32> CropPrices;
-	TMap<ECropType, int32> ProcessedCropPrices;
+	TMap<ECropType, int32> HarvestedCropPrices;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SalesCounter")
 	UStaticMeshComponent* MeshComp;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SalesCounter|Visual")
@@ -40,9 +40,9 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Sales")
 	int32 CornCount;
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Sales")
-	int32 ProcessedWheatCount;
+	int32 HarvestedWheatCount;
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Sales")
-	int32 ProcessedCornCount;
+	int32 HarvestedCornCount;
 
 public:
 	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable, Category="Sales")
@@ -61,9 +61,9 @@ public:
 	UFUNCTION(Blueprintable, Category="Sales")
 	FORCEINLINE int32 GetCropPrice(ECropType CropType) const { return CropPrices.FindRef(CropType); }
 	UFUNCTION(BlueprintCallable, Category="Sales")
-	FORCEINLINE int32 GetProcessedWheatCount() const { return ProcessedWheatCount; }
+	FORCEINLINE int32 GetHarvestedWheatCount() const { return HarvestedWheatCount; }
 	UFUNCTION(BlueprintCallable, Category="Sales")
-	FORCEINLINE int32 GetProcessedCornCount() const { return ProcessedCornCount; }
+	FORCEINLINE int32 GetHarvestedCornCount() const { return HarvestedCornCount; }
 
 	
 	AFarmGameTaskGameState* GetFarmGameState() const;

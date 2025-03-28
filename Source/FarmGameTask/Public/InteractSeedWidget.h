@@ -7,6 +7,7 @@
 #include "InteractSeedWidget.generated.h"
 
 class UButton;
+class UTextBlock;
 class ACropSlot;
 
 UCLASS()
@@ -34,6 +35,10 @@ protected:
 	UButton* CornButton;
 	UPROPERTY(meta=(BindWidget))
 	UButton* HarvestButton;
+	UPROPERTY(meta=(BindWidget))
+	UTextBlock* WheatOwned;
+	UPROPERTY(meta=(BindWidget))
+	UTextBlock* CornOwned;
 	
 	UFUNCTION()
 	void OnWheatClicked();

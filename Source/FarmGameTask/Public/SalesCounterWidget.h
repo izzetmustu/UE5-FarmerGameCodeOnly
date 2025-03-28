@@ -29,18 +29,18 @@ protected:
     UPROPERTY(meta = (BindWidget))
     UTextBlock* CornCountText;
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* ProcessedWheatCountText;
+    UTextBlock* HarvestedWheatCountText;
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* ProcessedCornCountText;
+    UTextBlock* HarvestedCornCountText;
 
     UPROPERTY(meta = (BindWidget))
     UTextBlock* WheatOwned;
     UPROPERTY(meta = (BindWidget))
     UTextBlock* CornOwned;
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* ProcessedWheatOwned;
+    UTextBlock* HarvestedWheatOwned;
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* ProcessedCornOwned;
+    UTextBlock* HarvestedCornOwned;
     
     UPROPERTY(meta = (BindWidget))
     UButton* BuyWheatButton;

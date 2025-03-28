@@ -43,8 +43,8 @@ ASalesCounter::ASalesCounter()
 	CornCount  = 100;
     CropPrices.Add(ECropType::Wheat ,10);
     CropPrices.Add(ECropType::Corn ,15);
-    CropPrices.Add(ECropType::ProcessedWheat ,30);
-    CropPrices.Add(ECropType::ProcessedCorn ,45);
+    CropPrices.Add(ECropType::HarvestedWheat ,30);
+    CropPrices.Add(ECropType::HarvestedCorn ,45);
 
     SetNetUpdateFrequency(66.f);
     SetMinNetUpdateFrequency(33.f);
@@ -131,11 +131,11 @@ void ASalesCounter::ServerChangeStock_Implementation(ECropType CropType, int32 A
     case ECropType::Corn:
         CornCount += Amount;
         break;
-    case ECropType::ProcessedWheat:
-        ProcessedWheatCount += Amount;
+    case ECropType::HarvestedWheat:
+        HarvestedWheatCount += Amount;
         break;
-    case ECropType::ProcessedCorn:
-        ProcessedCornCount += Amount;
+    case ECropType::HarvestedCorn:
+        HarvestedCornCount += Amount;
     default:
         break;
     }
@@ -154,10 +154,10 @@ int32 ASalesCounter::GetCropCount(ECropType CropType) const
         return CornCount;
     case ECropType::Wheat:
         return WheatCount;
-    case ECropType::ProcessedCorn:
-        return  ProcessedCornCount;
-    case ECropType::ProcessedWheat:
-        return ProcessedWheatCount;
+    case ECropType::HarvestedCorn:
+        return  HarvestedCornCount;
+    case ECropType::HarvestedWheat:
+        return HarvestedWheatCount;
     default:
         return CornCount;
     }

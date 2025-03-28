@@ -39,8 +39,6 @@ void USalesCounterWidget::NativeConstruct()
 void USalesCounterWidget::SetSalesCounter(ASalesCounter* InSalesCounter)
 {
     LinkedSalesCounter = InSalesCounter;
-
-    // Immediately update the display
     UpdateCounterDisplay();
 }
 
@@ -51,33 +49,34 @@ void USalesCounterWidget::UpdateCounterDisplay()
         if (BudgetTextBlock) BudgetTextBlock->SetText(FText::FromString("0"));
         if (WheatCountText) WheatCountText->SetText(FText::FromString("0"));
         if (CornCountText)  CornCountText->SetText(FText::FromString("0"));
-        if (ProcessedWheatCountText) ProcessedWheatCountText->SetText(FText::FromString("0"));
-        if (ProcessedCornCountText) ProcessedCornCountText->SetText(FText::FromString("0"));
+        if (HarvestedWheatCountText) HarvestedWheatCountText->SetText(FText::FromString("0"));
+        if (HarvestedCornCountText) HarvestedCornCountText->SetText(FText::FromString("0"));
         if (WheatOwned) WheatOwned->SetText(FText::FromString("0"));
         if (CornOwned) CornOwned->SetText(FText::FromString("0"));
-        if (ProcessedWheatOwned) ProcessedWheatOwned->SetText(FText::FromString("0"));
-        if (ProcessedCornOwned) ProcessedCornOwned->SetText(FText::FromString("0"));
+        if (HarvestedWheatOwned) HarvestedWheatOwned->SetText(FText::FromString("0"));
+        if (HarvestedCornOwned) HarvestedCornOwned->SetText(FText::FromString("0"));
         return;
     }
     
     const int32 CurrentBudget = LinkedSalesCounter->GetFarmGameState()->GetFarmBudget();
     const int32 CurrentWheat = LinkedSalesCounter->GetCropCount(ECropType::Wheat);
     const int32 CurrentCorn  = LinkedSalesCounter->GetCropCount(ECropType::Corn);
-    const int32 CurrentProcessedWheat = LinkedSalesCounter->GetProcessedWheatCount();
-    const int32 CurrentProcessedCorn  = LinkedSalesCounter->GetProcessedCornCount();
+    const int32 CurrentHarvestedWheat = LinkedSalesCounter->GetHarvestedWheatCount();
+    const int32 CurrentHarvestedCorn  = LinkedSalesCounter->GetHarvestedCornCount();
     
 
     BudgetTextBlock->SetText(FText::AsNumber(CurrentBudget));
     WheatCountText->SetText(FText::AsNumber(CurrentWheat));
     CornCountText->SetText(FText::AsNumber(CurrentCorn));
-    ProcessedWheatCountText->SetText(FText::AsNumber(CurrentProcessedWheat));
-    ProcessedCornCountText->SetText(FText::AsNumber(CurrentProcessedCorn));
+    HarvestedWheatCountText->SetText(FText::AsNumber(CurrentHarvestedWheat));
+    HarvestedCornCountText->SetText(FText::AsNumber(CurrentHarvestedCorn));
 
     // Inventory
-    WheatOwned->SetText(FText::AsNumber(Cast<AFarmGameTaskPlayerState>(GetOwningPlayerState())->GetWheatCount()));
-    CornOwned->SetText(FText::AsNumber(Cast<AFarmGameTaskPlayerState>(GetOwningPlayerState())->GetCornCount()));
-    ProcessedWheatOwned->SetText(FText::AsNumber(Cast<AFarmGameTaskPlayerState>(GetOwningPlayerState())->GetProcessedWheatCount()));
-    ProcessedCornOwned->SetText(FText::AsNumber(Cast<AFarmGameTaskPlayerState>(GetOwningPlayerState())->GetProcessedCornCount()));
+    AFarmGameTaskPlayerState *PS = Cast<AFarmGameTaskPlayerState>(GetOwningPlayerState());
+    WheatOwned->SetText(FText::AsNumber(PS->GetWheatCount()));
+    CornOwned->SetText(FText::AsNumber(PS->GetCornCount()));
+    HarvestedWheatOwned->SetText(FText::AsNumber(PS->GetHarvestedWheatCount()));
+    HarvestedCornOwned->SetText(FText::AsNumber(PS->GetHarvestedCornCount()));
 }
 
 void USalesCounterWidget::OnBuyWheatClicked()
@@ -105,7 +104,7 @@ void USalesCounterWidget::OnPlaceWheatClicked()
 
     if (AFarmGameTaskPlayerController* PC = Cast<AFarmGameTaskPlayerController>(GetOwningPlayer()))
     {
-        PC->ServerAttemptPlaceCrop(LinkedSalesCounter, ECropType::ProcessedWheat, 1);
+        PC->ServerAttemptPlaceCrop(LinkedSalesCounter, ECropType::HarvestedWheat, 1);
     }
 }
 
@@ -115,6 +114,6 @@ void USalesCounterWidget::OnPlaceCornClicked()
 
     if (AFarmGameTaskPlayerController* PC = Cast<AFarmGameTaskPlayerController>(GetOwningPlayer()))
     {
-        PC->ServerAttemptPlaceCrop(LinkedSalesCounter, ECropType::ProcessedCorn, 1);
+        PC->ServerAttemptPlaceCrop(LinkedSalesCounter, ECropType::HarvestedCorn, 1);
     }
 }

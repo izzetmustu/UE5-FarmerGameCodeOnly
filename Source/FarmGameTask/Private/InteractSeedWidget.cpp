@@ -4,6 +4,7 @@
 #include "FarmGameTask/Public/CropSlot.h"
 #include "FarmGameTask/Public/SlotTypes.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 #include "FarmGameTask/Public/FarmGameTaskPlayerController.h"
 
 void UInteractSeedWidget::NativeConstruct()
@@ -69,9 +70,8 @@ void UInteractSeedWidget::UpdateButtonVisibility()
 		if (HarvestButton) HarvestButton->SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}
-	// Get the current slot state from the field
-	const FSlotInfo SlotInfo= LinkedSlot->GetSlotInfo();
 	
+	const FSlotInfo SlotInfo= LinkedSlot->GetSlotInfo();
 	switch (SlotInfo.State)
 	{
 	case ESlotState::Empty:
@@ -79,6 +79,10 @@ void UInteractSeedWidget::UpdateButtonVisibility()
 			if (WheatButton)   WheatButton->SetVisibility(ESlateVisibility::Visible);
 			if (CornButton)    CornButton->SetVisibility(ESlateVisibility::Visible);
 			if (HarvestButton) HarvestButton->SetVisibility(ESlateVisibility::Collapsed);
+			if (WheatOwned)    WheatOwned->SetVisibility(ESlateVisibility::Visible);
+			if (CornOwned)    CornOwned->SetVisibility(ESlateVisibility::Visible);
+			CornOwned->SetText((FText::AsNumber(GetOwningPlayer()->GetPlayerState<AFarmGameTaskPlayerState>()->GetCornCount())));
+			WheatOwned->SetText((FText::AsNumber(GetOwningPlayer()->GetPlayerState<AFarmGameTaskPlayerState>()->GetWheatCount())));
 			break;
 		}
 	case ESlotState::Growing:
@@ -86,13 +90,26 @@ void UInteractSeedWidget::UpdateButtonVisibility()
 			if (WheatButton)   WheatButton->SetVisibility(ESlateVisibility::Collapsed);
 			if (CornButton)    CornButton->SetVisibility(ESlateVisibility::Collapsed);
 			if (HarvestButton) HarvestButton->SetVisibility(ESlateVisibility::Collapsed);
-			break;
+			if (WheatOwned)    WheatOwned->SetVisibility(ESlateVisibility::Collapsed);
+			if (CornOwned)    CornOwned->SetVisibility(ESlateVisibility::Collapsed);
+			return;
 		}
 	case ESlotState::ReadyToHarvest:
 		{
 			if (WheatButton)   WheatButton->SetVisibility(ESlateVisibility::Collapsed);
 			if (CornButton)    CornButton->SetVisibility(ESlateVisibility::Collapsed);
 			if (HarvestButton) HarvestButton->SetVisibility(ESlateVisibility::Visible);
+			if (WheatOwned)    WheatOwned->SetVisibility(ESlateVisibility::Collapsed);
+			if (CornOwned)    CornOwned->SetVisibility(ESlateVisibility::Collapsed);
+			break;
+		}
+	case ESlotState::Damaged:
+		{
+			if (WheatButton)   WheatButton->SetVisibility(ESlateVisibility::Collapsed);
+			if (CornButton)    CornButton->SetVisibility(ESlateVisibility::Collapsed);
+			if (HarvestButton) HarvestButton->SetVisibility(ESlateVisibility::Visible);
+			if (WheatOwned)    WheatOwned->SetVisibility(ESlateVisibility::Collapsed);
+			if (CornOwned)    CornOwned->SetVisibility(ESlateVisibility::Collapsed);
 			break;
 		}
 	default:
@@ -100,13 +117,13 @@ void UInteractSeedWidget::UpdateButtonVisibility()
 			if (WheatButton)   WheatButton->SetVisibility(ESlateVisibility::Collapsed);
 			if (CornButton)    CornButton->SetVisibility(ESlateVisibility::Collapsed);
 			if (HarvestButton) HarvestButton->SetVisibility(ESlateVisibility::Collapsed);
-			break;
+			if (WheatOwned)    WheatOwned->SetVisibility(ESlateVisibility::Collapsed);
+			if (CornOwned)    CornOwned->SetVisibility(ESlateVisibility::Collapsed);
+			return;
 		}
 	}
 	EnableWidgetInteractable();
 }
-
-
 
 void UInteractSeedWidget::OnWheatClicked()
 {
@@ -124,40 +141,52 @@ void UInteractSeedWidget::OnWheatClicked()
 				NewSlotInfo.SeedType = ESlotSeedType::Wheat;
 				NewSlotInfo.TimeRemaining = 10.0f;
 				MyPC->ServerAttemptSowSlot(LinkedSlot, NewSlotInfo);
+				DisableWidgetInteractable();
+				RemoveFromParent();
 			}
 		}
 	}
-	DisableWidgetInteractable();
-	RemoveFromParent();
 }
 
 void UInteractSeedWidget::OnCornClicked()
 {
-	// if (!LinkedField) return;
-	//
-	// APlayerController* PC = GetOwningPlayer();
-	// if (PC)
-	// {
-	// 	if (AFarmGameTaskPlayerController* MyPC = Cast<AFarmGameTaskPlayerController>(PC))
-	// 	{
-	// 		MyPC->ServerAttemptSowSlot(LinkedField, LinkedSlotIndex, ESeedType::Corn);
-	// 	}
-	// }
-	// RemoveFromParent();
+	if (!LinkedSlot) return;
+	
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+	{
+		if (AFarmGameTaskPlayerController* MyPC = Cast<AFarmGameTaskPlayerController>(PC))
+		{
+			if (MyPC->GetPlayerState<AFarmGameTaskPlayerState>()->GetCornCount() > 0)
+			{
+				FSlotInfo NewSlotInfo;
+				NewSlotInfo.State = ESlotState::Growing;
+				NewSlotInfo.SeedType = ESlotSeedType::Corn;
+				NewSlotInfo.TimeRemaining = 15.0f;
+				MyPC->ServerAttemptSowSlot(LinkedSlot, NewSlotInfo);
+				DisableWidgetInteractable();
+				RemoveFromParent();
+			}
+		}
+	}
 }
 
 void UInteractSeedWidget::OnHarvestClicked()
 {
-	// if (!LinkedField) return;
-	//
-	// APlayerController* PC = GetOwningPlayer();
-	// if (PC)
-	// {
-	// 	if (AFarmGameTaskPlayerController* MyPC = Cast<AFarmGameTaskPlayerController>(PC))
-	// 	{
-	// 		MyPC->ServerAttemptHarvest(LinkedField, LinkedSlotIndex);
-	// 	}
-	// }
-	// RemoveFromParent();
+	if (!LinkedSlot) return;
+	
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+	{
+		if (AFarmGameTaskPlayerController* MyPC = Cast<AFarmGameTaskPlayerController>(PC))
+		{
+			if (MyPC)
+			{
+				MyPC->ServerAttemptHarvestSlot(LinkedSlot);
+				DisableWidgetInteractable();
+				RemoveFromParent();
+			}
+		}
+	}
 }
 

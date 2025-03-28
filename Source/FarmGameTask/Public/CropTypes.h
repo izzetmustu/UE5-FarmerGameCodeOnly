@@ -5,7 +5,8 @@ enum class ECropType  : uint8
 {
 	Wheat UMETA(DisplayName="Wheat"),
 	Corn UMETA(DisplayName="Corn"),
-	ProcessedWheat UMETA(DisplayName="ProcessedWheat"),
-	ProcessedCorn UMETA(DisplayName="ProcessedCorn"),
+	HarvestedWheat UMETA(DisplayName="HarvestedWheat"),
+	HarvestedCorn UMETA(DisplayName="HarvestedCorn"),
+	Damaged UMETA(DisplayName="Damaged"),
 	MAX UMETA(DisplayName="DefaultMAX")
 };

@@ -50,10 +50,6 @@ AFarmGameTaskPlayerController::AFarmGameTaskPlayerController()
     bIsSalesWidgetVisible = false;
 }
 
-void AFarmGameTaskPlayerController::BuySeeds(int32 SeedCost)
-{
-}
-
 void AFarmGameTaskPlayerController::BeginPlay()
 {
     Super::BeginPlay();
@@ -99,8 +95,6 @@ void AFarmGameTaskPlayerController::Interact()
     
     FHitResult HitResult;
     FVector Start = GetPawn()->GetActorLocation();
-    // FVector ForwardVector = GetPawn()->GetActorForwardVector();
-    // FVector End = Start + (ForwardVector * 1000.0f); // Trace 1000 units ahead
     FVector End = Start - FVector(0, 0, 1000.0f);
     UE_LOG(LogTemp, Warning, TEXT("interact: %s") , *Start.ToString());
     FCollisionQueryParams CollisionParams;
@@ -119,30 +113,21 @@ void AFarmGameTaskPlayerController::Interact()
         ACropSlot* CropSlot = Cast<ACropSlot>(HitResult.GetActor());
         if (CropSlot)
         {
-            if (!InteractSeedWidgetClass) return;
-            if (!InteractSeedWidgetInstance) InteractSeedWidgetInstance = CreateWidget<UInteractSeedWidget>(GetWorld(), InteractSeedWidgetClass);
+            if (CropSlot->GetSlotInfo().TimeRemaining > 0.0f) return;
+            if (InteractSeedWidgetInstance && InteractSeedWidgetInstance->IsInViewport())
+            {
+                InteractSeedWidgetInstance->RemoveFromParent();
+                InteractSeedWidgetInstance = nullptr;
+            }
+            InteractSeedWidgetInstance = CreateWidget<UInteractSeedWidget>(this, InteractSeedWidgetClass);
             if (InteractSeedWidgetInstance)
             {
                 InteractSeedWidgetInstance->AddToViewport();
                 InteractSeedWidgetInstance->SetCropSlot(CropSlot);
             }
-            
-            // // if (SlotInfo.State == ESlotState::Growing || SlotInfo.State == ESlotState::ReadyToHarvest) return; //TODO
-            // UE_LOG(LogTemp, Warning, TEXT("Hit: %s") , *CropSlot->GetName());
-            // FSlotInfo NewInfo;
-            // NewInfo.State = ESlotState::Growing;
-            // NewInfo.SeedType = ESlotSeedType::Wheat;
-            // NewInfo.TimeRemaining = 10.0f;
-
-            // ServerInteractWithSlot(CropSlot, NewInfo);
-            
-
         }
 
     }
-
-    
-
 }
 
 void AFarmGameTaskPlayerController::ServerInteractWithSlot_Implementation(ACropSlot* TargetSlot, FSlotInfo Info)
@@ -164,11 +149,27 @@ void AFarmGameTaskPlayerController::ServerAttemptSowSlot_Implementation(ACropSlo
     if (!TargetSlot || !PS) return;
     ECropType SeedType = Info.SeedType == ESlotSeedType::Wheat ? ECropType::Wheat : ECropType::Corn;
     PS->ServerAddToInventory(SeedType, -1);
-    TargetSlot->SetSlotInfo(Info);
     ServerInteractWithSlot(TargetSlot, Info);
 }
 
 bool AFarmGameTaskPlayerController::ServerAttemptSowSlot_Validate(ACropSlot* TargetSlot, FSlotInfo Info)
+{
+    return true;
+}
+
+void AFarmGameTaskPlayerController::ServerAttemptHarvestSlot_Implementation(ACropSlot* TargetSlot)
+{
+    AFarmGameTaskPlayerState* PS = GetPlayerState<AFarmGameTaskPlayerState>();
+    if (!TargetSlot || !PS) return;
+    if (TargetSlot->GetSlotInfo().State != ESlotState::Damaged)
+    {
+        ECropType SeedType = TargetSlot->GetSlotInfo().SeedType == ESlotSeedType::Wheat ? ECropType::HarvestedWheat : ECropType::HarvestedCorn;
+        PS->ServerAddToInventory(SeedType, 1);
+    }
+    ServerInteractWithSlot(TargetSlot, FSlotInfo());
+}
+
+bool AFarmGameTaskPlayerController::ServerAttemptHarvestSlot_Validate(ACropSlot* TargetSlot)
 {
     return true;
 }
@@ -197,11 +198,12 @@ void AFarmGameTaskPlayerController::ServerAttemptBuyCrop_Implementation(ASalesCo
 
     TargetCounter->ServerChangeStock(CropType, -Amount);
     PS->ServerAddToInventory(CropType, Amount);
+    PS->ServerMoneySpent(TargetCounter->GetCropPrice(CropType));
     FarmGS->ServerChangeBudget(-TotalCost);
 }
 bool AFarmGameTaskPlayerController::ServerAttemptBuyCrop_Validate(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
 {
-    return (TargetCounter && Amount > 0 && Amount < 999999);
+    return true;
 }
 
 void AFarmGameTaskPlayerController::ServerAttemptPlaceCrop_Implementation(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
@@ -236,30 +238,31 @@ bool AFarmGameTaskPlayerController::ServerAttemptPlaceCrop_Validate(ASalesCounte
 
 void AFarmGameTaskPlayerController::UpdateSalesWidget()
 {
-    SalesCounterWidgetInstance->UpdateCounterDisplay();
+    if (SalesCounterWidgetInstance) SalesCounterWidgetInstance->UpdateCounterDisplay();
+}
+
+void AFarmGameTaskPlayerController::UpdateFarmWidget()
+{
+    if (FarmBudgetWidgetInstance) FarmBudgetWidgetInstance->UpdateFarmBudgetDisplay();
 }
 
 void AFarmGameTaskPlayerController::ShowSalesCounter(ASalesCounter* InSalesCounter)
 {
-    // If we already have the sales widget visible, do nothing
     if (bIsSalesWidgetVisible)
         return;
 
     bIsSalesWidgetVisible = true;
 
-    // Remove the farm budget widget from viewport (if it's displayed)
     if (FarmBudgetWidgetInstance)
     {
         FarmBudgetWidgetInstance->RemoveFromParent();
     }
 
-    // Create the sales counter widget
     if (SalesCounterWidgetClass)
     {
         SalesCounterWidgetInstance = CreateWidget<USalesCounterWidget>(this, SalesCounterWidgetClass);
         if (SalesCounterWidgetInstance)
         {
-            // Link the sales counter to the widget
             SalesCounterWidgetInstance->SetSalesCounter(InSalesCounter);
             SalesCounterWidgetInstance->AddToViewport();
         }
@@ -267,7 +270,6 @@ void AFarmGameTaskPlayerController::ShowSalesCounter(ASalesCounter* InSalesCount
 
     bShowMouseCursor = true;
     SetIgnoreLookInput(true);
-    // SetIgnoreMoveInput(false);
 }
 
 void AFarmGameTaskPlayerController::HideSalesCounter()
@@ -276,16 +278,18 @@ void AFarmGameTaskPlayerController::HideSalesCounter()
         return;
 
     bIsSalesWidgetVisible = false;
-    
+
     if (SalesCounterWidgetInstance)
     {
-        SalesCounterWidgetInstance->RemoveFromParent();
+        if (SalesCounterWidgetInstance->IsInViewport())
+        {
+            SalesCounterWidgetInstance->RemoveFromParent();
+        }
         SalesCounterWidgetInstance = nullptr;
     }
     bShowMouseCursor = false;
     SetIgnoreLookInput(false);
-    // SetIgnoreMoveInput(false); 
-    
+
     if (FarmBudgetWidgetInstance && !FarmBudgetWidgetInstance->IsInViewport())
     {
         FarmBudgetWidgetInstance->AddToViewport();

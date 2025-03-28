@@ -57,7 +57,6 @@ void ACropSlot::Tick(float DeltaTime)
 
 void ACropSlot::SetSlotInfo_Implementation(FSlotInfo InSlotInfo)
 {
-	if (SlotInfo.State == ESlotState::Growing || SlotInfo.State == ESlotState::ReadyToHarvest) return;
 	ClearTimer();
 	SlotInfo = InSlotInfo;
 	StartTimer();
@@ -139,8 +138,9 @@ void ACropSlot::UpdateVisuals()
 		FVector NewScale = FVector(1.0f, 1.0f, Mesh->GetRelativeScale3D().Z + Diff);
 		Mesh->SetRelativeScale3D(NewScale);
 
-		float Ratio = NewScale.Z / 0.5f; // Assuming 0.5 is the max scale
-		FLinearColor NewColor = FLinearColor::LerpUsingHSV(FLinearColor::White, FLinearColor::Green, Ratio);// Update material color
+		float Ratio = NewScale.Z / 0.5f;
+		FLinearColor DstColor = SlotInfo.SeedType == ESlotSeedType::Wheat ? FLinearColor::Green : FLinearColor::Yellow;
+		FLinearColor NewColor = FLinearColor::LerpUsingHSV(FLinearColor::White, DstColor, Ratio);// Update material color
 		if (DynamicMaterial)
 		{
 			DynamicMaterial->SetVectorParameterValue("BaseColor", NewColor);
@@ -152,7 +152,8 @@ void ACropSlot::UpdateVisuals()
 		Mesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 0.5f));
 		if (DynamicMaterial)
 		{
-			DynamicMaterial->SetVectorParameterValue("BaseColor", FLinearColor::Green);
+			FLinearColor DstColor = SlotInfo.SeedType == ESlotSeedType::Wheat ? FLinearColor::Green : FLinearColor::Yellow;
+			DynamicMaterial->SetVectorParameterValue("BaseColor", DstColor);
 		}
 	}
 	else

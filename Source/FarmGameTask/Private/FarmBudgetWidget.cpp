@@ -22,31 +22,23 @@ void UFarmBudgetWidget::UpdateFarmBudgetDisplay()
 		return;
 	}
 
-	// Get the current budget
 	const int32 CurrentBudget = FarmGameState->FarmBudget;
-	// Convert it to text and set on the BudgetTextBlock
 	FText BudgetText = FText::AsNumber(CurrentBudget);
 	BudgetTextBlock->SetText(BudgetText);
 
-	// Get the current budget
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC && CropsHarvested && MoneySpent && CropsProcessed)
+	if (PC && MoneySpent && CropsHarvested)
 	{
 		AFarmGameTaskPlayerState* PS = PC->GetPlayerState<AFarmGameTaskPlayerState>();
 		if (PS)
 		{
-			int32 Temp = PS->GetCropsHarvested();
-			// Convert it to text and set on the BudgetTextBlock
+			int32 Temp = PS->GetMoneySpent();
 			FText TempText = FText::AsNumber(Temp);
-			CropsHarvested->SetText(TempText);
-			
-			Temp = PS->GetMoneySpent();
-			TempText = FText::AsNumber(Temp);
 			MoneySpent->SetText(TempText);
 
-			Temp = PS->GetCropsProcessed();
+			Temp = PS->GetCropsHarvested();
 			TempText = FText::AsNumber(Temp);
-			CropsProcessed->SetText(TempText);
+			CropsHarvested->SetText(TempText);
 		}
 	}
 }

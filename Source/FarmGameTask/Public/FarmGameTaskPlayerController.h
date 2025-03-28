@@ -24,9 +24,6 @@ public:
 
 	AFarmGameTaskPlayerController();
 
-	UFUNCTION(BlueprintCallable, Category="Farm")
-	void BuySeeds(int32 SeedCost);
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="UI")
 	TSubclassOf<UFarmBudgetWidget> FarmBudgetWidgetClass;
 	UPROPERTY()
@@ -34,7 +31,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="UI")
 	TSubclassOf<USalesCounterWidget> SalesCounterWidgetClass;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="UI")
 	USalesCounterWidget* SalesCounterWidgetInstance;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="UI")
@@ -46,7 +43,9 @@ public:
 	bool bIsSalesWidgetVisible;
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void UpdateSalesWidget();
-
+	UFUNCTION(BlueprintCallable, Category="UI")
+	void UpdateFarmWidget();
+	
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void ShowSalesCounter(ASalesCounter* InSalesCounter);
 	UFUNCTION(BlueprintCallable, Category="UI")
@@ -65,6 +64,8 @@ public:
 	void ServerInteractWithSlot(ACropSlot* TargetSlot, FSlotInfo Info);
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerAttemptSowSlot(ACropSlot* TargetSlot, FSlotInfo Info);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerAttemptHarvestSlot(ACropSlot* TargetSlot);
 	
 protected:
 	virtual void BeginPlay() override;
