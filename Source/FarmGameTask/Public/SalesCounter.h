@@ -45,7 +45,7 @@ protected:
 	int32 HarvestedCornCount;
 
 public:
-	UFUNCTION(Server, Reliable, WithValidation, BlueprintCallable, Category="Sales")
+	UFUNCTION(Server, Reliable, WithValidation, Category="Sales")
 	void ServerChangeStock(ECropType CropType, int32 Amount);
 	
 	UFUNCTION()

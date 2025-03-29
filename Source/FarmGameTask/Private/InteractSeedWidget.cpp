@@ -141,11 +141,11 @@ void UInteractSeedWidget::OnWheatClicked()
 				NewSlotInfo.SeedType = ESlotSeedType::Wheat;
 				NewSlotInfo.TimeRemaining = 10.0f;
 				MyPC->ServerAttemptSowSlot(LinkedSlot, NewSlotInfo);
-				DisableWidgetInteractable();
-				RemoveFromParent();
 			}
 		}
 	}
+	DisableWidgetInteractable();
+	RemoveFromParent();
 }
 
 void UInteractSeedWidget::OnCornClicked()
@@ -164,11 +164,11 @@ void UInteractSeedWidget::OnCornClicked()
 				NewSlotInfo.SeedType = ESlotSeedType::Corn;
 				NewSlotInfo.TimeRemaining = 15.0f;
 				MyPC->ServerAttemptSowSlot(LinkedSlot, NewSlotInfo);
-				DisableWidgetInteractable();
-				RemoveFromParent();
 			}
 		}
 	}
+	DisableWidgetInteractable();
+	RemoveFromParent();
 }
 
 void UInteractSeedWidget::OnHarvestClicked()
@@ -183,10 +183,10 @@ void UInteractSeedWidget::OnHarvestClicked()
 			if (MyPC)
 			{
 				MyPC->ServerAttemptHarvestSlot(LinkedSlot);
-				DisableWidgetInteractable();
-				RemoveFromParent();
 			}
 		}
 	}
+	DisableWidgetInteractable();
+	RemoveFromParent();
 }
 

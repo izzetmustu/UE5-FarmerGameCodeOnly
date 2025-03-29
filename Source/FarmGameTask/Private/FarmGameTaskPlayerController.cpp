@@ -176,7 +176,7 @@ bool AFarmGameTaskPlayerController::ServerAttemptHarvestSlot_Validate(ACropSlot*
 
 void AFarmGameTaskPlayerController::ServerAttemptBuyCrop_Implementation(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
 {
-    if (!TargetCounter || Amount <= 0)
+    if (!TargetCounter)
     {
         return;
     }
@@ -208,7 +208,7 @@ bool AFarmGameTaskPlayerController::ServerAttemptBuyCrop_Validate(ASalesCounter*
 
 void AFarmGameTaskPlayerController::ServerAttemptPlaceCrop_Implementation(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
 {
-    if (!TargetCounter || Amount <= 0)
+    if (!TargetCounter)
     {
         return;
     }
@@ -226,10 +226,11 @@ void AFarmGameTaskPlayerController::ServerAttemptPlaceCrop_Implementation(ASales
     {
         return;
     }
-
+    UE_LOG(LogTemp, Warning, TEXT("ServerAttemptPlaceCrop: %s"), *FString::Printf(TEXT("CropType: %d, Amount: %d"), (int32)CropType, Amount));
+    UE_LOG(LogTemp, Warning, TEXT("Calling ServerChangeStock on: %s | HasAuthority: %d"), *GetNameSafe(TargetCounter), TargetCounter->HasAuthority());
     TargetCounter->ServerChangeStock(CropType, Amount);
     PS->ServerAddToInventory(CropType, -Amount);
-    FarmGS->ServerChangeBudget(TotalCost);
+    // FarmGS->ServerChangeBudget(TotalCost);
 }
 bool AFarmGameTaskPlayerController::ServerAttemptPlaceCrop_Validate(ASalesCounter* TargetCounter, ECropType CropType, int32 Amount)
 {
@@ -261,15 +262,21 @@ void AFarmGameTaskPlayerController::ShowSalesCounter(ASalesCounter* InSalesCount
     if (SalesCounterWidgetClass)
     {
         SalesCounterWidgetInstance = CreateWidget<USalesCounterWidget>(this, SalesCounterWidgetClass);
+
         if (SalesCounterWidgetInstance)
         {
             SalesCounterWidgetInstance->SetSalesCounter(InSalesCounter);
             SalesCounterWidgetInstance->AddToViewport();
+
+            FInputModeGameAndUI InputMode;
+            InputMode.SetWidgetToFocus(SalesCounterWidgetInstance->TakeWidget());
+            InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+            InputMode.SetHideCursorDuringCapture(false); // Keep mouse cursor visible
+
+            SetInputMode(InputMode);
+            bShowMouseCursor = true;
         }
     }
-
-    bShowMouseCursor = true;
-    SetIgnoreLookInput(true);
 }
 
 void AFarmGameTaskPlayerController::HideSalesCounter()
@@ -287,9 +294,11 @@ void AFarmGameTaskPlayerController::HideSalesCounter()
         }
         SalesCounterWidgetInstance = nullptr;
     }
-    bShowMouseCursor = false;
-    SetIgnoreLookInput(false);
 
+    FInputModeGameOnly InputMode;
+    SetInputMode(InputMode);
+    bShowMouseCursor = false;
+    
     if (FarmBudgetWidgetInstance && !FarmBudgetWidgetInstance->IsInViewport())
     {
         FarmBudgetWidgetInstance->AddToViewport();

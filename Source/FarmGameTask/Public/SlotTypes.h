@@ -26,7 +26,7 @@ USTRUCT(BlueprintType)
 struct FSlotInfo
 {
 	GENERATED_BODY()
-public:
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	ESlotState State;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)

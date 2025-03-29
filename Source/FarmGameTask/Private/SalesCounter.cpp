@@ -41,13 +41,13 @@ ASalesCounter::ASalesCounter()
     
 	WheatCount = 100;
 	CornCount  = 100;
+    HarvestedWheatCount = 0;
+    HarvestedCornCount  = 0;
+    
     CropPrices.Add(ECropType::Wheat ,10);
     CropPrices.Add(ECropType::Corn ,15);
     CropPrices.Add(ECropType::HarvestedWheat ,30);
     CropPrices.Add(ECropType::HarvestedCorn ,45);
-
-    SetNetUpdateFrequency(66.f);
-    SetMinNetUpdateFrequency(33.f);
 }
 
 // Called when the game starts or when spawned
@@ -139,6 +139,9 @@ void ASalesCounter::ServerChangeStock_Implementation(ECropType CropType, int32 A
     default:
         break;
     }
+    UE_LOG(LogTemp, Warning, TEXT("ServerChangeStock: %d added"), Amount);
+    UE_LOG(LogTemp, Warning, TEXT("ServerChangeStock CALLED on: %s | HasAuthority: %d"), 
+    *GetName(), HasAuthority());
 }
 
 bool ASalesCounter::ServerChangeStock_Validate(ECropType CropType, int32 Amount)
@@ -169,4 +172,6 @@ void ASalesCounter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
     DOREPLIFETIME(ASalesCounter, WheatCount);
     DOREPLIFETIME(ASalesCounter, CornCount);
+    DOREPLIFETIME(ASalesCounter, HarvestedWheatCount);
+    DOREPLIFETIME(ASalesCounter, HarvestedCornCount);
 }
